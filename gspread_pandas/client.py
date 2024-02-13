@@ -5,6 +5,7 @@ from gspread import Spreadsheet
 from gspread.client import Client as ClientV4
 from gspread.exceptions import APIError, SpreadsheetNotFound
 from gspread.utils import finditem
+from gspread.http_client import HTTPClient
 
 from gspread_pandas.conf import default_scope, get_creds
 from gspread_pandas.util import (
@@ -89,7 +90,8 @@ class Client(ClientV4):
                     "google.auth.credentials.Credentials"
                 )
             session = AuthorizedSession(credentials)
-        super().__init__(credentials, session)
+        #http_client = HTTPClient(auth=credentials, session=session)
+        super().__init__(credentials)
 
         monkey_patch_request(self)
 
@@ -134,7 +136,7 @@ class Client(ClientV4):
         """`(str)` - E-mail for the currently authenticated user"""
         if not self._email:
             try:
-                self._email = self.request(
+                self._email = self.http_client.request(
                     "get", "https://www.googleapis.com/userinfo/v2/me"
                 ).json()["email"]
             except Exception:
@@ -194,7 +196,7 @@ class Client(ClientV4):
         if file_id:
             url += "/{}".format(file_id)
         try:
-            res = self.request(method, url, params=params, json=data)
+            res = self.http_client.request(method, url, params=params, json=data)
             if res.text:
                 return res.json()
         except APIError as e:
